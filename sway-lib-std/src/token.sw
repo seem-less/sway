@@ -15,6 +15,26 @@ pub fn mint_to_contract(amount: u64, destination: ContractId) {
     force_transfer(amount, contract_id(), destination);
 }
 
+pub enum Identity {
+    Address: Address,
+    ContractId: ContractId,
+}
+
+
+pub fn mint_to(amount: u64, id: Identity) {
+    match id {
+        Identity::Address(a) => { mint_to_address(amount, a) },
+        Identity::ContractId(c) => { mint_to_contract(amount, c) },
+    }
+}
+
+pub fn send_to(amount: u64, asset: ContractId, id: Identity) {
+    match id {
+        Identity::Address(a) => { transfer_to_output(amount, asset, a) },
+        Identity::ContractId(c) => { force_transfer(amount, asset, c) },
+    }
+}
+
 /// Mint `amount` coins of the current contract's `asset_id` and send them to the Address `recipient`.
 pub fn mint_to_address(amount: u64, recipient: Address) {
     mint(amount);
