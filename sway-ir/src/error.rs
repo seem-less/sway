@@ -2,6 +2,8 @@
 /// more for users of the `sway-ir` crate, i.e., compiler developers.
 ///
 /// XXX They're not very rich and could do with a little more verbosity.
+use crate::metadata::StorageOperation;
+use sway_types::span::Span;
 
 #[derive(Debug)]
 pub enum IrError {
@@ -48,6 +50,10 @@ pub enum IrError {
     VerifyStoreNonExistentPointer,
     VerifyStoreToNonPointer,
     VerifyUntypedValuePassedToFunction,
+
+    StorageMissingAttribute(StorageOperation, Span),
+    StorageMismatchedAttribute(StorageOperation, Span),
+    StorageUnneededAttribute(StorageOperation, Span),
 }
 
 use std::fmt;
@@ -249,6 +255,19 @@ impl fmt::Display for IrError {
             IrError::VerifyUntypedValuePassedToFunction => write!(
                 f,
                 "Verification failed: An untyped/void value has been passed to a function call."
+            ),
+
+            IrError::StorageMissingAttribute(needs_attr, _span) => write!(
+                f,
+                "This function performs storage {needs_attr} but does not have the required attribute(s).",
+            ),
+            IrError::StorageMismatchedAttribute(needs_attr, _span) => write!(
+                f,
+                "This function performs storage {needs_attr} but does not have the required attribute(s).",
+            ),
+            IrError::StorageUnneededAttribute(_unneeded_attr, _span) => write!(
+                f,
+                "This function does not need storage attribute(s).",
             ),
         }
     }

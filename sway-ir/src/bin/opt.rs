@@ -19,7 +19,14 @@ fn main() -> std::io::Result<()> {
     let input_str = read_from_input(&config.input_path)?;
 
     // Parse it. XXX Improve this error message too.
-    let mut ir = sway_ir::parser::parse(&input_str).map_err(&to_err)?;
+    let mut ir = sway_ir::parser::parse(&input_str).map_err(|errs| {
+        to_err(
+            errs.into_iter()
+                .map(|err| err.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+    })?;
 
     // Perform optimisation passes in order.
     for pass in config.passes {

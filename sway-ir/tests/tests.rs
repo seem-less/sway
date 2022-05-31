@@ -24,8 +24,10 @@ fn run_tests<F: Fn(&mut sway_ir::Context) -> bool>(sub_dir: &str, opt_fn: F) {
 
         let mut ir = match sway_ir::parser::parse(&input) {
             Ok(ir) => ir,
-            Err(parse_err) => {
-                tracing::error!("{parse_err}");
+            Err(parse_errs) => {
+                for err in parse_errs {
+                    tracing::error!("{err}");
+                }
                 panic!()
             }
         };

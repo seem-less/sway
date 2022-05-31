@@ -21,6 +21,7 @@ pub enum TypedExpressionVariant {
         contract_call_params: HashMap<String, TypedExpression>,
         arguments: Vec<(Ident, TypedExpression)>,
         function_body: TypedCodeBlock,
+        function_body_name_span: Span,
         /// If this is `Some(val)` then `val` is the metadata. If this is `None`, then
         /// there is no selector.
         self_state_idx: Option<StateIndex>,

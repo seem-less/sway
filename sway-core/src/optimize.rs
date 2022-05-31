@@ -4,8 +4,8 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{
     asm_generation::from_ir::ir_type_size_in_bytes,
     constants,
-    error::CompileError,
-    parse_tree::{AsmOp, AsmRegister, BuiltinProperty, LazyOp, Literal, Visibility},
+    error::*,
+    parse_tree::*,
     semantic_analysis::{ast_node::*, *},
     type_engine::*,
 };
@@ -16,10 +16,11 @@ use sway_ir::*;
 
 // -------------------------------------------------------------------------------------------------
 
-pub(crate) fn compile_program(program: TypedProgram) -> Result<Context, CompileError> {
+pub(crate) fn compile_program(program: TypedProgram) -> CompileResult<Context> {
     let TypedProgram { kind, root } = program;
+
     let mut ctx = Context::default();
-    match kind {
+    if let Err(compile_err) = match kind {
         TypedProgramKind::Script {
             main_function,
             declarations,
@@ -35,9 +36,50 @@ pub(crate) fn compile_program(program: TypedProgram) -> Result<Context, CompileE
             declarations,
         } => compile_contract(&mut ctx, abi_entries, &root.namespace, declarations),
         TypedProgramKind::Library { .. } => unimplemented!("compile library to ir"),
-    }?;
-    ctx.verify()
-        .map_err(|ir_error| CompileError::InternalOwned(ir_error.to_string(), Span::dummy()))
+    } {
+        return err(Vec::new(), vec![compile_err]);
+    }
+
+    let convert_storage_op = |ir_op: &StorageOperation| match ir_op {
+        StorageOperation::Reads => Purity::Reads,
+        StorageOperation::Writes => Purity::Writes,
+        StorageOperation::ReadsWrites => Purity::ReadsWrites,
+    };
+
+    let mut warnings = Vec::new();
+    let mut errors = Vec::new();
+    match ctx.verify() {
+        Ok(ctx) => ok(ctx, warnings, errors),
+        Err(verify_errors) => {
+            for verify_error in &verify_errors {
+                match verify_error {
+                    // Special case for storage errors.
+                    IrError::StorageMissingAttribute(needed_op, span)
+                    | IrError::StorageMismatchedAttribute(needed_op, span) => {
+                        errors.push(CompileError::ImpureInPureContext {
+                            storage_op: needed_op.simple_string(),
+                            attrs: convert_storage_op(needed_op).to_attribute_syntax(),
+                            span: span.clone(),
+                        });
+                    }
+
+                    IrError::StorageUnneededAttribute(_unneeded_op, span) => {
+                        warnings.push(CompileWarning {
+                            span: span.clone(),
+                            warning_content: Warning::DeadStorageDeclarationForFunction,
+                        })
+                    }
+
+                    // Other verification errors are ICEs.
+                    _otherwise => errors.push(CompileError::InternalOwned(
+                        verify_error.to_string(),
+                        Span::dummy(),
+                    )),
+                }
+            }
+            err(warnings, errors)
+        }
+    }
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -291,6 +333,8 @@ fn compile_fn_with_args(
         return_type,
         return_type_span,
         visibility,
+        purity,
+        span,
         ..
     } = ast_fn_decl;
 
@@ -299,6 +343,20 @@ fn compile_fn_with_args(
         .map(|(name, ty, span)| (name, ty, MetadataIndex::from_span(context, &span)))
         .collect();
     let ret_type = convert_resolved_typeid(context, &return_type, &return_type_span)?;
+    let span_md_idx = MetadataIndex::from_span(context, &span);
+    let storage_md_idx = if purity == Purity::Pure {
+        None
+    } else {
+        Some(MetadataIndex::get_storage_index(
+            context,
+            match purity {
+                Purity::Pure => unreachable!("Already checked for Pure above."),
+                Purity::Reads => StorageOperation::Reads,
+                Purity::Writes => StorageOperation::Writes,
+                Purity::ReadsWrites => StorageOperation::ReadsWrites,
+            },
+        ))
+    };
     let func = Function::new(
         context,
         module,
@@ -307,6 +365,8 @@ fn compile_fn_with_args(
         ret_type,
         selector,
         visibility == Visibility::Public,
+        span_md_idx,
+        storage_md_idx,
     );
 
     // We clone the struct symbols here, as they contain the globals; any new local declarations
@@ -601,6 +661,7 @@ impl FnCompiler {
                 contract_call_params,
                 arguments,
                 function_body,
+                function_body_name_span,
                 self_state_idx,
                 selector,
             } => {
@@ -617,9 +678,9 @@ impl FnCompiler {
                 } else {
                     self.compile_fn_call(
                         context,
-                        name.suffix.as_str(),
                         arguments,
-                        Some(function_body),
+                        function_body,
+                        function_body_name_span,
                         self_state_idx,
                         span_md_idx,
                     )
@@ -1044,9 +1105,9 @@ impl FnCompiler {
     fn compile_fn_call(
         &mut self,
         context: &mut Context,
-        _ast_name: &str,
         ast_args: Vec<(Ident, TypedExpression)>,
-        callee_body: Option<TypedCodeBlock>,
+        callee_body: TypedCodeBlock,
+        callee_span: Span,
         self_state_idx: Option<StateIndex>,
         span_md_idx: Option<MetadataIndex>,
     ) -> Result<Value, CompileError> {
@@ -1080,8 +1141,6 @@ impl FnCompiler {
                 })
                 .collect();
 
-            let callee_body = callee_body.unwrap();
-
             // We're going to have to reverse engineer the return type.
             let return_type = Self::get_codeblock_return_type(&callee_body).unwrap_or_else(||
                     // This code block is missing a return or implicit return.  The only time I've
@@ -1094,7 +1153,7 @@ impl FnCompiler {
                 name: callee_ident,
                 body: callee_body,
                 parameters,
-                span: crate::span::Span::new(" ".into(), 0, 0, None).unwrap(),
+                span: callee_span,
                 return_type,
                 type_parameters: Vec::new(),
                 return_type_span: crate::span::Span::new(" ".into(), 0, 0, None).unwrap(),
@@ -2640,7 +2699,7 @@ mod tests {
         let expected = String::from_utf8_lossy(&expected_bytes);
 
         let typed_program = parse_to_typed_program(sw_path.clone(), &input);
-        let ir = super::compile_program(typed_program).unwrap();
+        let ir = super::compile_program(typed_program).value.unwrap();
         let output = sway_ir::printer::to_string(&ir);
 
         // Use a tricky regex to replace the local path in the metadata with something generic.  It
@@ -2696,8 +2755,10 @@ mod tests {
 
         let parsed_ctx = match sway_ir::parser::parse(&input) {
             Ok(p) => p,
-            Err(e) => {
-                println!("{}: {}", path.display(), e);
+            Err(errs) => {
+                for err in errs {
+                    println!("{}: {}", path.display(), err);
+                }
                 panic!();
             }
         };

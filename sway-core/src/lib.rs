@@ -336,13 +336,13 @@ pub(crate) fn compile_ast_to_ir_to_asm(
     );
 
     let tree_type = program.kind.tree_type();
-    let mut ir = match optimize::compile_program(program) {
-        Ok(ir) => ir,
-        Err(e) => {
-            errors.push(e);
-            return err(warnings, errors);
-        }
-    };
+
+    let mut ir = check!(
+        optimize::compile_program(program),
+        return err(warnings, errors),
+        warnings,
+        errors,
+    );
 
     // Inline function calls since we don't support them yet.  For scripts and predicates we inline
     // into main(), and for contracts we inline into ABI impls, which are found due to them having
