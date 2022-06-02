@@ -26,11 +26,14 @@ pub enum TypedDeclaration {
     StructDeclaration(TypedStructDeclaration),
     EnumDeclaration(TypedEnumDeclaration),
     Reassignment(TypedReassignment),
+    // make this a sctruct -- use same convention  
     ImplTrait {
-        trait_name: CallPath,
+        trait_name: CallPath, // have same behaviour as parsetree trait_name. 
+        // have a look where this is getting used and replace with the type_implementing_for.span instead
+        // check where its used, probably just for errors 
         span: Span,
         methods: Vec<TypedFunctionDeclaration>,
-        type_implementing_for: TypeInfo,
+        type_implementing_for: TypeInfo, // this might has the span of the declaration 
     },
     AbiDeclaration(TypedAbiDeclaration),
     // If type parameters are defined for a function, they are put in the namespace just for
