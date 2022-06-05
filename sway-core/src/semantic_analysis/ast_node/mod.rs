@@ -500,12 +500,12 @@ impl TypedAstNode {
                                 type_implementing_for.clone(),
                                 functions_buf.clone(),
                             );
-                            TypedDeclaration::ImplTrait {
+                            TypedDeclaration::ImplTrait(TypedImplTrait {
                                 trait_name,
                                 span: block_span,
                                 methods: functions_buf,
                                 type_implementing_for,
-                            }
+                            })
                         }
                         Declaration::StructDeclaration(decl) => {
                             let decl = check!(

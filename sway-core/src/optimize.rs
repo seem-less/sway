@@ -173,18 +173,14 @@ fn compile_declarations(
                 //
                 //compile_function(context, module, decl).map(|_| ())?
             }
-            TypedDeclaration::ImplTrait {
-                methods: _,
-                type_implementing_for: _,
-                ..
-            } => {
+            TypedDeclaration::ImplTrait(_impl_trait) => {
                 // And for the same reason we don't need to compile impls at all.
                 //
                 // compile_impl(
                 //    context,
                 //    module,
-                //    type_implementing_for,
-                //    methods,
+                //    impl_trait.type_implementing_for,
+                //    impl_trait.methods,
                 //)?,
             }
 
@@ -527,13 +523,13 @@ impl FnCompiler {
                                 &tr.rhs,
                                 span_md_idx,
                             ),
-                        TypedDeclaration::ImplTrait { span, .. } => {
+                        TypedDeclaration::ImplTrait(impl_trait) => {
                             // XXX What if we ignore the trait implementation???  Potentially since
                             // we currently inline everything and below we 'recreate' the functions
                             // lazily as they are called, nothing needs to be done here.  BUT!
                             // This is obviously not really correct, and eventually we want to
                             // compile and then call these properly.
-                            let span_md_idx = MetadataIndex::from_span(context, &span);
+                            let span_md_idx = MetadataIndex::from_span(context, &impl_trait.span);
                             Ok(Constant::get_unit(context, span_md_idx))
                         }
                         TypedDeclaration::AbiDeclaration(_) => {

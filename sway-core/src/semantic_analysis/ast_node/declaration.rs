@@ -18,6 +18,22 @@ use derivative::Derivative;
 use sway_types::{Ident, Span};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TypedImplTrait {
+    pub trait_name: CallPath,
+    pub(crate) span: Span,
+    pub methods: Vec<TypedFunctionDeclaration>,
+    pub(crate) type_implementing_for: TypeInfo,
+}
+
+impl CopyTypes for TypedImplTrait {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.methods
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TypedDeclaration {
     VariableDeclaration(TypedVariableDeclaration),
     ConstantDeclaration(TypedConstantDeclaration),
@@ -26,21 +42,11 @@ pub enum TypedDeclaration {
     StructDeclaration(TypedStructDeclaration),
     EnumDeclaration(TypedEnumDeclaration),
     Reassignment(TypedReassignment),
-    // make this a sctruct -- use same convention  
-    ImplTrait {
-        trait_name: CallPath, // have same behaviour as parsetree trait_name. 
-        // have a look where this is getting used and replace with the type_implementing_for.span instead
-        // check where its used, probably just for errors 
-        span: Span,
-        methods: Vec<TypedFunctionDeclaration>,
-        type_implementing_for: TypeInfo, // this might has the span of the declaration 
-    },
+    ImplTrait(TypedImplTrait),
     AbiDeclaration(TypedAbiDeclaration),
     // If type parameters are defined for a function, they are put in the namespace just for
     // the body of that function.
-    GenericTypeForFunctionScope {
-        name: Ident,
-    },
+    GenericTypeForFunctionScope { name: Ident },
     ErrorRecovery,
     StorageDeclaration(TypedStorageDeclaration),
     StorageReassignment(TypeCheckedStorageReassignment),
@@ -59,11 +65,7 @@ impl CopyTypes for TypedDeclaration {
             StructDeclaration(ref mut struct_decl) => struct_decl.copy_types(type_mapping),
             EnumDeclaration(ref mut enum_decl) => enum_decl.copy_types(type_mapping),
             Reassignment(ref mut reassignment) => reassignment.copy_types(type_mapping),
-            ImplTrait {
-                ref mut methods, ..
-            } => {
-                methods.iter_mut().for_each(|x| x.copy_types(type_mapping));
-            }
+            ImplTrait(ref mut impl_trait) => impl_trait.copy_types(type_mapping),
             // generics in an ABI is unsupported by design
             AbiDeclaration(..) => (),
             StorageDeclaration(..) => (),
@@ -287,7 +289,7 @@ impl TypedDeclaration {
                 .iter()
                 .fold(lhs[0].span(), |acc, this| Span::join(acc, this.span())),
             AbiDeclaration(TypedAbiDeclaration { span, .. }) => span.clone(),
-            ImplTrait { span, .. } => span.clone(),
+            ImplTrait(TypedImplTrait { span, .. }) => span.clone(),
             StorageDeclaration(decl) => decl.span(),
             StorageReassignment(decl) => decl.span(),
             ErrorRecovery | GenericTypeForFunctionScope { .. } => {

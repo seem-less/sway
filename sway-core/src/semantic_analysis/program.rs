@@ -1,4 +1,6 @@
-use super::{TypedAstNode, TypedAstNodeContent, TypedDeclaration, TypedFunctionDeclaration};
+use super::{
+    TypedAstNode, TypedAstNodeContent, TypedDeclaration, TypedFunctionDeclaration, TypedImplTrait,
+};
 use crate::{
     error::*,
     parse_tree::{ParseProgram, Purity, TreeType},
@@ -74,11 +76,11 @@ impl TypedProgram {
                 }
                 // ABI entries are all functions declared in impl_traits on the contract type
                 // itself.
-                TypedAstNodeContent::Declaration(TypedDeclaration::ImplTrait {
+                TypedAstNodeContent::Declaration(TypedDeclaration::ImplTrait(TypedImplTrait {
                     methods,
                     type_implementing_for: TypeInfo::Contract,
                     ..
-                }) => abi_entries.extend(methods.clone()),
+                })) => abi_entries.extend(methods.clone()),
                 // XXX we're excluding the above ABI methods, is that OK?
                 TypedAstNodeContent::Declaration(decl) => declarations.push(decl.clone()),
                 _ => (),

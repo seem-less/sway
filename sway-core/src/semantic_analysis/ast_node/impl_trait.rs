@@ -77,12 +77,12 @@ pub(crate) fn implementation_of_trait(
                 functions_buf.clone(),
             );
             ok(
-                TypedDeclaration::ImplTrait {
+                TypedDeclaration::ImplTrait(TypedImplTrait {
                     trait_name,
                     span: block_span,
                     methods: functions_buf,
                     type_implementing_for,
-                },
+                }),
                 warnings,
                 errors,
             )
@@ -126,12 +126,12 @@ pub(crate) fn implementation_of_trait(
                 functions_buf.clone(),
             );
             ok(
-                TypedDeclaration::ImplTrait {
+                TypedDeclaration::ImplTrait(TypedImplTrait {
                     trait_name,
                     span: block_span,
                     methods: functions_buf,
                     type_implementing_for,
-                },
+                }),
                 warnings,
                 errors,
             )

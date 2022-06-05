@@ -108,12 +108,8 @@ fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
                 );
             }
         }
-        TypedDeclaration::ImplTrait {
-            trait_name,
-            methods,
-            ..
-        } => {
-            for ident in &trait_name.prefixes {
+        TypedDeclaration::ImplTrait(impl_trait) => {
+            for ident in &impl_trait.trait_name.prefixes {
                 tokens.insert(
                     to_ident_key(ident),
                     TokenType::TypedDeclaration(declaration.clone()),
@@ -122,8 +118,9 @@ fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
             // This is reporting the train name as r#Self and not the actual name
             // Also the span is referencing the declerations span.
             //tokens.insert(to_ident_key(&trait_name.suffix), TokenType::TypedDeclaration(declaration.clone()));
+            eprintln!("TypedDeclaration trait_name: {:#?}", impl_trait.trait_name);
 
-            for method in methods {
+            for method in &impl_trait.methods {
                 tokens.insert(
                     to_ident_key(&method.name),
                     TokenType::TypedFunctionDeclaration(method.clone()),
