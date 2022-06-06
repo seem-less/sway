@@ -117,7 +117,7 @@ fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
             }
             // This is reporting the train name as r#Self and not the actual name
             // Also the span is referencing the declerations span.
-            //tokens.insert(to_ident_key(&trait_name.suffix), TokenType::TypedDeclaration(declaration.clone()));
+            tokens.insert(to_ident_key(&impl_trait.trait_name.suffix), TokenType::TypedDeclaration(declaration.clone()));
             eprintln!("TypedDeclaration trait_name: {:#?}", impl_trait.trait_name);
 
             for method in &impl_trait.methods {

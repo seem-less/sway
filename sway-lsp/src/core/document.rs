@@ -82,7 +82,7 @@ impl TextDocument {
         None
     }
 
-    pub fn _get_token_map(&self) -> &TokenMap {
+    pub fn get_token_map(&self) -> &TokenMap {
         &self.token_map
     }
 

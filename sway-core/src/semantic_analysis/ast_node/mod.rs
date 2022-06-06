@@ -445,6 +445,15 @@ impl TypedAstNode {
                                 );
                             }
 
+                            let name = match &type_implementing_for {
+                                TypeInfo::Custom { name, .. } => Some(name.clone()),
+                                _ => None
+                            };
+
+                            eprintln!("Extracted ident {:#?}", &name);
+
+                            eprintln!("PASSED IN - type_implementing_for {:#?}", &type_implementing_for);
+
                             // Resolve the Self type as it's most likely still 'Custom' and use the
                             // resolved type for self instead.
                             let implementing_for_type_id = check!(
@@ -453,7 +462,11 @@ impl TypedAstNode {
                                 warnings,
                                 errors
                             );
+
                             let type_implementing_for = look_up_type_id(implementing_for_type_id);
+
+                            eprintln!("RESOLVED - type_implementing_for {:#?}", &type_implementing_for);
+
                             let mut functions_buf: Vec<TypedFunctionDeclaration> = vec![];
                             for mut fn_decl in functions.into_iter() {
                                 // ensure this fn decl's parameters and signature lines up with the
@@ -490,9 +503,13 @@ impl TypedAstNode {
                                     errors
                                 ));
                             }
+                            
                             let trait_name = CallPath {
                                 prefixes: vec![],
-                                suffix: Ident::new_with_override("r#Self", block_span.clone()),
+                                suffix: match name {
+                                    Some(ident) => ident,
+                                    None => Ident::new_with_override("r#Self", block_span.clone())
+                                },
                                 is_absolute: false,
                             };
                             namespace.insert_trait_implementation(
