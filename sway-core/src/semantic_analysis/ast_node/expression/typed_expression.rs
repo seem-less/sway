@@ -981,6 +981,11 @@ impl TypedExpression {
         let mut warnings = vec![];
         let mut errors = vec![];
 
+        // eprintln!("---------------------------------------------------");
+        // eprintln!("call_path: {:#?}", &call_path);
+        // eprintln!("span: {:#?}", &span);
+        // eprintln!("---------------------------------------------------");
+
         // find the module that the symbol is in
         let module_path = namespace.find_module_path(&call_path.prefixes);
         check!(
@@ -1082,7 +1087,7 @@ impl TypedExpression {
         }
         let exp = TypedExpression {
             expression: TypedExpressionVariant::StructExpression {
-                struct_name: struct_decl.name.clone(),
+                struct_name: call_path.suffix,
                 fields: typed_fields_buf,
             },
             return_type: struct_decl.create_type_id(),

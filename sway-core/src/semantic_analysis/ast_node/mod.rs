@@ -445,14 +445,14 @@ impl TypedAstNode {
                                 );
                             }
 
-                            let name = match &type_implementing_for {
-                                TypeInfo::Custom { name, .. } => Some(name.clone()),
-                                _ => None
+                            let trait_name = CallPath {
+                                prefixes: vec![],
+                                suffix: match &type_implementing_for {
+                                    TypeInfo::Custom { name, .. } => name.clone(),
+                                    _ => Ident::new_with_override("r#Self", block_span.clone())
+                                },
+                                is_absolute: false,
                             };
-
-                            eprintln!("Extracted ident {:#?}", &name);
-
-                            eprintln!("PASSED IN - type_implementing_for {:#?}", &type_implementing_for);
 
                             // Resolve the Self type as it's most likely still 'Custom' and use the
                             // resolved type for self instead.
@@ -464,8 +464,6 @@ impl TypedAstNode {
                             );
 
                             let type_implementing_for = look_up_type_id(implementing_for_type_id);
-
-                            eprintln!("RESOLVED - type_implementing_for {:#?}", &type_implementing_for);
 
                             let mut functions_buf: Vec<TypedFunctionDeclaration> = vec![];
                             for mut fn_decl in functions.into_iter() {
@@ -504,14 +502,6 @@ impl TypedAstNode {
                                 ));
                             }
                             
-                            let trait_name = CallPath {
-                                prefixes: vec![],
-                                suffix: match name {
-                                    Some(ident) => ident,
-                                    None => Ident::new_with_override("r#Self", block_span.clone())
-                                },
-                                is_absolute: false,
-                            };
                             namespace.insert_trait_implementation(
                                 trait_name.clone(),
                                 type_implementing_for.clone(),

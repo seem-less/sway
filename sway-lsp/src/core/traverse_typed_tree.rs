@@ -35,6 +35,8 @@ fn to_ident_key(ident: &Ident) -> (Ident, Span) {
 fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
     match declaration {
         TypedDeclaration::VariableDeclaration(variable) => {
+            eprintln!("Declaration VariableDeclaration: {:#?}", variable);
+
             tokens.insert(
                 to_ident_key(&variable.name),
                 TokenType::TypedDeclaration(declaration.clone()),
@@ -109,16 +111,14 @@ fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
             }
         }
         TypedDeclaration::ImplTrait(impl_trait) => {
+            //eprintln!("TypedImplTrait: {:#?}", &impl_trait);
             for ident in &impl_trait.trait_name.prefixes {
                 tokens.insert(
                     to_ident_key(ident),
                     TokenType::TypedDeclaration(declaration.clone()),
                 );
             }
-            // This is reporting the train name as r#Self and not the actual name
-            // Also the span is referencing the declerations span.
             tokens.insert(to_ident_key(&impl_trait.trait_name.suffix), TokenType::TypedDeclaration(declaration.clone()));
-            eprintln!("TypedDeclaration trait_name: {:#?}", impl_trait.trait_name);
 
             for method in &impl_trait.methods {
                 tokens.insert(
@@ -134,6 +134,12 @@ fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
                         TokenType::TypedFunctionParameter(paramater.clone()),
                     );
                 }
+
+                let return_type_ident = Ident::new(method.return_type_span.clone());
+                tokens.insert(
+                    to_ident_key(&return_type_ident),
+                    TokenType::TypedFunctionDeclaration(method.clone()),
+                );
             }
         }
         TypedDeclaration::AbiDeclaration(abi_decl) => {
@@ -237,6 +243,7 @@ fn handle_expression(expression: &TypedExpression, tokens: &mut TokenMap) {
             ref struct_name,
             ref fields,
         } => {
+            eprintln!("StructExpression: {:#?}", &struct_name);
             tokens.insert(
                 to_ident_key(struct_name),
                 TokenType::TypedExpression(expression.clone()),
