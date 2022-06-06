@@ -35,8 +35,6 @@ fn to_ident_key(ident: &Ident) -> (Ident, Span) {
 fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
     match declaration {
         TypedDeclaration::VariableDeclaration(variable) => {
-            eprintln!("Declaration VariableDeclaration: {:#?}", variable);
-
             tokens.insert(
                 to_ident_key(&variable.name),
                 TokenType::TypedDeclaration(declaration.clone()),
@@ -111,14 +109,16 @@ fn handle_declaration(declaration: &TypedDeclaration, tokens: &mut TokenMap) {
             }
         }
         TypedDeclaration::ImplTrait(impl_trait) => {
-            //eprintln!("TypedImplTrait: {:#?}", &impl_trait);
             for ident in &impl_trait.trait_name.prefixes {
                 tokens.insert(
                     to_ident_key(ident),
                     TokenType::TypedDeclaration(declaration.clone()),
                 );
             }
-            tokens.insert(to_ident_key(&impl_trait.trait_name.suffix), TokenType::TypedDeclaration(declaration.clone()));
+            tokens.insert(
+                to_ident_key(&impl_trait.trait_name.suffix),
+                TokenType::TypedDeclaration(declaration.clone()),
+            );
 
             for method in &impl_trait.methods {
                 tokens.insert(
@@ -243,7 +243,6 @@ fn handle_expression(expression: &TypedExpression, tokens: &mut TokenMap) {
             ref struct_name,
             ref fields,
         } => {
-            eprintln!("StructExpression: {:#?}", &struct_name);
             tokens.insert(
                 to_ident_key(struct_name),
                 TokenType::TypedExpression(expression.clone()),

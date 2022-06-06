@@ -18,22 +18,6 @@ use derivative::Derivative;
 use sway_types::{Ident, Span};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TypedImplTrait {
-    pub trait_name: CallPath,
-    pub(crate) span: Span,
-    pub methods: Vec<TypedFunctionDeclaration>,
-    pub(crate) type_implementing_for: TypeInfo,
-}
-
-impl CopyTypes for TypedImplTrait {
-    fn copy_types(&mut self, type_mapping: &TypeMapping) {
-        self.methods
-            .iter_mut()
-            .for_each(|x| x.copy_types(type_mapping));
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TypedDeclaration {
     VariableDeclaration(TypedVariableDeclaration),
     ConstantDeclaration(TypedConstantDeclaration),
@@ -430,6 +414,22 @@ impl CopyTypes for TypedTraitDeclaration {
             .iter_mut()
             .for_each(|x| x.copy_types(type_mapping));
         // we don't have to type check the methods because it hasn't been type checked yet
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TypedImplTrait {
+    pub trait_name: CallPath,
+    pub(crate) span: Span,
+    pub methods: Vec<TypedFunctionDeclaration>,
+    pub(crate) type_implementing_for: TypeInfo,
+}
+
+impl CopyTypes for TypedImplTrait {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.methods
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
     }
 }
 

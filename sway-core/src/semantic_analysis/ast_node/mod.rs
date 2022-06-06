@@ -449,7 +449,7 @@ impl TypedAstNode {
                                 prefixes: vec![],
                                 suffix: match &type_implementing_for {
                                     TypeInfo::Custom { name, .. } => name.clone(),
-                                    _ => Ident::new_with_override("r#Self", block_span.clone())
+                                    _ => Ident::new_with_override("r#Self", block_span.clone()),
                                 },
                                 is_absolute: false,
                             };
@@ -462,9 +462,7 @@ impl TypedAstNode {
                                 warnings,
                                 errors
                             );
-
                             let type_implementing_for = look_up_type_id(implementing_for_type_id);
-
                             let mut functions_buf: Vec<TypedFunctionDeclaration> = vec![];
                             for mut fn_decl in functions.into_iter() {
                                 // ensure this fn decl's parameters and signature lines up with the
@@ -501,7 +499,6 @@ impl TypedAstNode {
                                     errors
                                 ));
                             }
-                            
                             namespace.insert_trait_implementation(
                                 trait_name.clone(),
                                 type_implementing_for.clone(),

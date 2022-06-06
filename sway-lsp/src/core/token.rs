@@ -168,8 +168,6 @@ fn handle_custom_type(type_info: &TypeInfo, tokens: &mut Vec<Token>) {
 fn handle_declaration(declaration: Declaration, tokens: &mut Vec<Token>) {
     match declaration {
         Declaration::VariableDeclaration(variable) => {
-            //eprintln!("Declaration VariableDeclaration: {:#?}", &variable);
-
             let name = variable.name.as_str();
             // Don't collect tokens if the ident's name contains __tuple_
             // The individual tuple elements are handled in the subsequent VariableDeclaration's
@@ -231,7 +229,6 @@ fn handle_declaration(declaration: Declaration, tokens: &mut Vec<Token>) {
             handle_expression(reassignment.rhs, tokens);
         }
         Declaration::ImplTrait(impl_trait) => {
-            //eprintln!("Declaration trait_name: {:#?}", impl_trait.trait_name);
             let ident = impl_trait.trait_name.suffix;
             let token = Token::from_ident(&ident, TokenType::ImplTrait);
             tokens.push(token);
@@ -241,8 +238,6 @@ fn handle_declaration(declaration: Declaration, tokens: &mut Vec<Token>) {
             }
         }
         Declaration::ImplSelf(impl_self) => {
-            //eprintln!("Declaration impl_self: {:#?}", impl_self);
-
             handle_custom_type(&impl_self.type_implementing_for, tokens);
 
             for func_dec in impl_self.functions {

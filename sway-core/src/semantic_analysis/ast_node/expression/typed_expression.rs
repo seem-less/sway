@@ -981,11 +981,6 @@ impl TypedExpression {
         let mut warnings = vec![];
         let mut errors = vec![];
 
-        // eprintln!("---------------------------------------------------");
-        // eprintln!("call_path: {:#?}", &call_path);
-        // eprintln!("span: {:#?}", &span);
-        // eprintln!("---------------------------------------------------");
-
         // find the module that the symbol is in
         let module_path = namespace.find_module_path(&call_path.prefixes);
         check!(
